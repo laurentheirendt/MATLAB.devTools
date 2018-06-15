@@ -105,10 +105,32 @@ function initDevTools(repoName)
     % request the local directory if the fullForkDir is not yet known
     if isempty(gitConf.localDir) && isempty(gitConf.fullForkDir)
 
-        createDir = false;
+        % check if there is already a COBRA Toolbox in the path
+        if ~exist('CBTDIR', 'var')
+            global CBTDIR
+            createDir = true;
+            if ~isempty(CBTDIR) && exist(gitConf.localDir, 'dir') == 7
 
-        while ~createDir
-            reply = input([gitCmd.lead, originCall, ' -> Please define the location of your fork\n       current: ', strrep(pwd,'\','\\'),'\n       Enter the path (press ENTER to use the current path): '], 's');
+                % set the local directory based on CBTDIR
+                gitConf.localDir = strrep(CBTDIR, '\', '\\');
+
+                % check if the path contains the pattern 'fork-cobratoolbox'
+                if ~isempty(strfind(gitConf.localDir, gitConf.nickName)) % contains the nickname
+                    gitConf.localDir = gitConf.localDir(1:end-length(gitConf.nickName)-1-length(gitConf.leadForkDirName));
+                end
+
+                ctPresent = true;
+                printMsg(mfilename, ['The local directory of your fork has been set to', strrep(gitConf.localDir, '\', '\\')], gitCmd.trail);
+            else
+                ctPresent = false;
+                printMsg(mfilename, 'The specified CBTDIR cannot be retrieved or does not exist. Run >> initCobraToolbox to automatically detect your fork.', gitCmd.trail);
+            end
+        else
+            createDir = false;
+        end
+
+        while ~createDir && ~ctPresent
+            reply = input([gitCmd.lead, originCall, ' -> Please define the location of your fork\n       current: ', strrep(pwd, '\', '\\'), '\n       Enter the path (press ENTER to use the current path): '], 's');
 
             % define the local directory as the current directory if the reply is empty
             if isempty(reply)
